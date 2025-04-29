@@ -13,6 +13,69 @@ char *err;
 }Cmd;
 
 
+void errFunc(Cmd *c,char *input,int pos,int chunk_pos){
+
+    if(pos == 0){
+
+    if(input[0] != '*'){
+        c->flag = true;
+        sprintf(c->err,"-ERR: expected * at position %d instead found %c",0,input[0]);
+    }else if(!isdigit(input[1])){
+           c->flag = true;
+           sprintf(c->err,"-ERR: expected integer at position %d instead found %c",1,input[1]);
+        }
+
+    }
+    
+    if(pos == 2){
+        if(input[pos] != '\r'){
+                c->flag = true;
+                sprintf(c->err,"-ERR: expected \\r at position %d instead found %c",pos,input[pos]);
+            }else if(input[pos+1] != '\n'){
+                   c->flag = true;
+                   sprintf(c->err,"-ERR: expected \\n at position %d instead found %c",pos+1,input[pos+1]);
+            }
+    }
+        
+        
+    if(pos > 2){
+
+            if(chunk_pos == 0){
+
+                if(input[pos] != '$'){
+                    c->flag = true;
+                    sprintf(c->err,"-ERR: expected $ at position %d instead found %c",pos,input[pos]);
+                }else if(!isdigit(input[pos+1])){
+                        c->flag = true;
+                        sprintf(c->err,"-ERR: expected integer at position %d instead found %c",pos+1,input[pos+1]);
+                      }else if(input[pos+2] != '\r'){
+                            c->flag = true;
+                            sprintf(c->err,"-ERR: expected \r at position %d instead found %c",pos+2,input[pos+2]);
+                        }else if(input[pos+3] != '\n'){
+                              c->flag = true;
+                              sprintf(c->err,"-ERR: expected \n at position %d instead found %c",pos+3,input[pos+3]);
+                            }
+
+            }else{
+
+                if(pos >= strlen(input)){
+                   c->flag = true; 
+                   sprintf(c->err,"-ERR: missing both \\r and \\n");
+                }else if(input[pos] != '\r'){
+                c->flag = true;
+                sprintf(c->err,"-ERR: expected \\r at position %d instead found %c",pos,input[pos]);
+                }else if(input[pos+1] != '\n'){
+                      c->flag = true;
+                      sprintf(c->err,"-ERR: expected \\n at position %d instead found %c",pos+1,input[pos+1]);
+              }
+            }
+
+        }
+    
+}
+    
+
+
 
 Cmd *redis_parser(char *input){
 
@@ -23,48 +86,24 @@ Cmd *redis_parser(char *input){
     pr->args = (char**)(malloc(1000*sizeof(char*)));//"*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"
     int temp;
 
-    if( input[0] != '*' || !isdigit(input[1])){
-        pr->flag = true;
-        if(input[0] != '*')
-        sprintf(pr->err,"-ERR: expected * at position %d instead found %c",0,input[0]);
-        else sprintf(pr->err,"-ERR: expected integer at position %d instead found %c",1,input[1]);
-    }else{
-        
+    errFunc(pr,input,0,0); //checkpoint 1
 
+    if(!(pr->flag))
+    {
         pr->narg = input[1] - '0';
 
         int i = 2;
-        if(input[i] != '\r' || input[i+1] != '\n'){
-            
-            pr->flag = true;
-            printf("test \n");
-            if(input[i] != '\r')
-            sprintf(pr->err,"-ERR: expected \r at position %d instead found %c",i,input[i]);
-            else sprintf(pr->err,"-ERR: expected \n at position %d instead found %c",i+1,input[i+1]);
-            }
+        errFunc(pr,input,i,0); //checkpoint 2
 
-        
         i+=2;
         int j = 0;
         while(i < strlen(input) && !(pr->flag)){
 
-            if(input[i] != '$' || !isdigit(input[i+1]) || input[i+2] != '\r' || input[i+3] != '\n'){
-                pr->flag = true;
-                if(input[i] != '$')
-                sprintf(pr->err,"-ERR: expected $ at position %d instead found %c",i,input[i]);
-                else if(!isdigit(input[i+1]))
-                     sprintf(pr->err,"-ERR: expected integer at position %d instead found %c",i+1,input[i+1]);
-                    else if(input[i+2] != '\r')
-                         sprintf(pr->err,"-ERR: expected \r at position %d instead found %c",i+2,input[i+2]);
-                         else sprintf(pr->err,"-ERR: expected \n at position %d instead found %c",i+3,input[i+3]);
-
-            }else {
-                   temp = input[i+1] - '0';
-                   i+=4;
-                 }
-
-
+            errFunc(pr,input,i,0);  //checkpoint 3
             if(!(pr->flag)){
+                temp = input[i+1] - '0';
+                i+=4;
+
                 char *aux = (char*)(malloc(temp+1*sizeof(aux)));
                 memcpy(aux,&input[i],temp);
                 aux[temp+1] = '\0';
@@ -72,23 +111,16 @@ Cmd *redis_parser(char *input){
                 j++;
 
                 i = i+temp;
+                
+                errFunc(pr,input,i,1); //checkpoint 4
+                i+=2;
             }
-            
-            if(input[i] != '\r' || input[i+1] != '\n'){
-            pr->flag = true;
-            if(input[i] != '\r')
-            sprintf(pr->err,"-ERR: expected \r at position %d instead found %c",i,input[i]);
-            else sprintf(pr->err,"-ERR: expected \n at position %d instead found %c",i+1,input[i+1]);
-            }else i+=2;
         }
-                  
     }
 
     return pr;
-
 }
     
-
    
 
 void main(){
@@ -97,35 +129,22 @@ void main(){
 
    char *test = (char*)(malloc(1000*sizeof(char))); 
   
-   //test = "*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
-
-
-   printf("Give me your string \n");
-   fgets(test,1000,stdin);
-   char *res = (char*)(malloc(1000*sizeof(char)));
-   char **pos = (char**)(malloc(sizeof(char*)));
-
-   char *aux = strtok_r(test," ",pos); 
-   char *temp = (char*)(malloc(sizeof(char)));
-  
-   strcpy(res,"*3\r\n");
-   
-   int i = 0;
-   while(aux != NULL){
-    sprintf(temp,"$3\r\n%s\r\n",aux);
-    strcat(res,temp);
-    aux = strtok_r(NULL," ",pos);
-    i++;
-   }
+   test = "*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
 
    printf("\n");
 
-   Cmd *s = redis_parser(res);
+   Cmd *s = redis_parser(test);
+   
+ 
+   if(s->flag)
+   printf(" %s ",s->err);
+   else{
    printf("Your full command is: \n");
    int x;
    for(x=0;x<s->narg;x++)
    printf("%s ",s->args[x]);
-   
+    
+   }
    printf("\n");
     
 }
