@@ -20,31 +20,30 @@ void initSocketServerAddr(struct sockaddr_in **s){
     *s = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
     (*s)->sin_family = AF_INET;
     (*s)->sin_port = htons(6379);
-    inet_pton(AF_INET,"192.168.2.57",&((*s)->sin_addr.s_addr));
+    inet_pton(AF_INET,"192.168.2.57",&((*s)->sin_addr));
 }
 
 void main(){
     
-    //signal(SIGCHLD,SIG_IGN);
 
-    //Initialize server IP structure
-    struct sockaddr_in *server_addr;
-    initSocketServerAddr(&server_addr);
-
+    
+    //Socket creation, TCP style
     int server_fd = socket(AF_INET,SOCK_STREAM,0);
     if(server_fd < 0){
     perror("Server error \n");
     exit(1);
     }
     
-        
+    //Initialize server IP structure with a specific address so we can bind the socket to an address
+    struct sockaddr_in *server_addr;
+    initSocketServerAddr(&server_addr);
     int bind_result = bind(server_fd,(struct sockaddr*)server_addr,sizeof(struct sockaddr_in));
     if(bind_result < 0){
         perror("Error binding ip address \n");
         exit(1);
     }
         
-        
+    //Opens the connection to the socket in its specified address
     int server_l = listen(server_fd,5);
     if(server_l < 0){
     perror("Server failed listening \n");

@@ -8,6 +8,7 @@
 typedef struct Cmd{
 int narg;
 bool flag;
+int size;
 char **args;
 char *err;
 }Cmd;
@@ -81,6 +82,7 @@ Cmd *redis_parser(char *input){
 
     Cmd *pr = (Cmd*)(malloc(sizeof(Cmd)));
     pr->narg = 0;
+    pr->size = 0;
     pr->flag = false;
     pr->err = (char*)(malloc(10000*sizeof(char)));
     pr->args = (char**)(malloc(1000*sizeof(char*)));//"*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"
@@ -96,7 +98,6 @@ Cmd *redis_parser(char *input){
         errFunc(pr,input,i,0); //checkpoint 2
 
         i+=2;
-        int j = 0;
         while(i < strlen(input) && !(pr->flag)){
 
             errFunc(pr,input,i,0);  //checkpoint 3
@@ -107,8 +108,8 @@ Cmd *redis_parser(char *input){
                 char *aux = (char*)(malloc(temp+1*sizeof(aux)));
                 memcpy(aux,&input[i],temp);
                 aux[temp+1] = '\0';
-                pr->args[j] = aux;
-                j++;
+                pr->args[pr->size] = aux;
+                pr->size++;
 
                 i = i+temp;
                 
