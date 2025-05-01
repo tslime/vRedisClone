@@ -5,13 +5,7 @@
 #include<stdbool.h>
 
 
-typedef struct Cmd{
-int narg;
-bool flag;
-int size;
-char **args;
-char *err;
-}Cmd;
+#include "Resp.h"
 
 
 void errFunc(Cmd *c,char *input,int pos,int chunk_pos){
@@ -123,7 +117,7 @@ Cmd *redis_parser(char *input){
 }
     
    
-
+/*
 void main(){
 
  
@@ -148,4 +142,4 @@ void main(){
    }
    printf("\n");
     
-}
+}*/

@@ -43,7 +43,7 @@ void main(){
    exit(1);
    }
 
-   //IP structure initialization for socket connection
+   //IP structure initialization for client socket connection
    struct sockaddr_in *client_addr = (struct sockaddr_in*)(malloc(sizeof(struct sockaddr_in)));
    initSocketClientAddr(client_addr);
 
@@ -62,18 +62,18 @@ void main(){
   while(1){
    printf("Give me your command \n");
    fgets(test,1000,stdin);
-   //test[strlen(test)-1] = '\0';
+   test[strlen(test)-1] = '\0';
+   char *r = encode(test);
 
-   send(client_fd,test,strlen(test),0);
+   send(client_fd,r,strlen(r),0);
+   
    recv(client_fd,buf,1000,0);
    printf("%s \n",buf);
 
   } 
-   
-   
-  
+     
+}
 
-   
 
    /*
    printf("encoded: ");
@@ -89,7 +89,3 @@ void main(){
    }
    printf("\n");
    */
-   
-
-    
-}

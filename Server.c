@@ -11,9 +11,7 @@
 #include<sys/epoll.h>
 #include<signal.h>
 
-
-
-
+#include "Resp.h"
 
 
 void initSocketServerAddr(struct sockaddr_in **s){
@@ -22,6 +20,8 @@ void initSocketServerAddr(struct sockaddr_in **s){
     (*s)->sin_port = htons(6379);
     inet_pton(AF_INET,"192.168.2.57",&((*s)->sin_addr));
 }
+
+
 
 void main(){
     
@@ -61,7 +61,7 @@ void main(){
         server_event->data.fd = server_fd;
         epoll_ctl(events_fd,EPOLL_CTL_ADD,server_fd,server_event);
 
-        //Array that holds events that are ready in the table and a buffer for clients as well as client fd
+        //Array that holds events that are ready in the table and a buffer for clients and  a client fd to hold the ID of clients
         struct epoll_event *events = (struct epoll_event*)(malloc(10*sizeof(struct epoll_event)));
         char *buffer = malloc(10000);
         int client_fd;
@@ -95,11 +95,26 @@ void main(){
 
                         memset(buffer,0,10000);
                         int r = read(events[i].data.fd,buffer,10000);
+
                         if(r <=0){
                         epoll_ctl(events_fd,EPOLL_CTL_DEL,events[i].data.fd,NULL);
                         close(events[i].data.fd);
                         }else{
-                          printf("client %d says: %s \n",events[i].data.fd,buffer);
+                          Cmd *rec = redis_parser(buffer);
+                          char **t_rec = rec->args;
+
+                          printf("client %d says: \n",events[i].data.fd);
+
+                          if(rec->flag)
+                          printf("%s",rec->err);
+                          else{
+                            int i;
+                            for(i=0;i<rec->narg;i++)
+                            printf("%s ",t_rec[i]);
+                          }
+
+                          printf("\n");
+                          
                           write(events[i].data.fd,"test from the other side\r\n",strlen("test from the other side\r\n"));
                           memset(buffer,0,10000);
                         }
