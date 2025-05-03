@@ -37,6 +37,7 @@ void main(){
     //Initialize server IP structure with a specific address so we can bind the socket to an address
     struct sockaddr_in *server_addr;
     initSocketServerAddr(&server_addr);
+    
     int bind_result = bind(server_fd,(struct sockaddr*)server_addr,sizeof(struct sockaddr_in));
     if(bind_result < 0){
         perror("Error binding ip address \n");

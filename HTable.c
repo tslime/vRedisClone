@@ -1,5 +1,3 @@
-#include "Htable.h"
-
 #include<stdio.h>
 #include<malloc.h>
 #include<stdlib.h>
@@ -7,6 +5,8 @@
 #include<stdbool.h>
 #include<ctype.h>
 
+
+#include "Htable.h"
 
 #define SCALED_GOLDEN_RATIO 0.61803398875
 
@@ -24,28 +24,6 @@ void initHT(HTable **t,int s){
     (*t)->num_entries = 0;
     (*t)->load_factor = 0;
     
-}
-
-
-void resizeHT(HTable **t,int new_size){
-    
-    HTable *new_table = (HTable*)(malloc(sizeof(HTable) + new_size*sizeof(HTLinkedlist)));
-
-    int i;
-    for(i=0;i<new_size;i++){
-        if(i < (*t)->size)
-        new_table->slots[i] = (*t)->slots[i];
-        else{
-            new_table->slots[i] = (HTLinkedlist*)(malloc(sizeof(HTLinkedlist)));
-            new_table->slots[i]->head = NULL;
-        }
-    }
-
-    new_table->num_entries = (*t)->num_entries;
-    new_table->load_factor = (*t)->load_factor;
-    new_table->size = new_size;
-
-    *t = new_table;
 }
 
 
@@ -85,7 +63,7 @@ bool ht_gettype(char *k){
     return b;
 }
 
-int ht_code(HTable *t,void *k){
+int ht_code(int table_size,void *k){
     int hcode = 0;
     int total = 0;
 
@@ -95,62 +73,81 @@ int ht_code(HTable *t,void *k){
         total = total*10 + ( ((char*)k)[i] - '0');
 
         total = ((total << 4)^total)*SCALED_GOLDEN_RATIO;    
-        hcode = total%t->size;
+        hcode = total%table_size;
     }else{
         int x;
         for(x=0;x<strlen(k);x++)
         total = total + (int)(((char*)k)[x]);
         
         total = ((total << 4)^total)*SCALED_GOLDEN_RATIO;    
-        hcode = total%t->size;
+        hcode = total%table_size;
 
     }
     
     return hcode;
 }
 
-void ht_set(HTable *t,void *k,void *v){
 
-    int code = ht_code(t,k);
-    HTNode *nd = (HTNode*)(malloc(sizeof(HTNode)));
-    nd->key = k;
-    nd->value = v;
-    nd->next = NULL;
+void resizeHT(HTable **t,int new_size){
+    
+    HTable *new_table = (HTable*)(malloc(sizeof(HTable) + new_size*sizeof(HTLinkedlist)));
 
-    if(t->load_factor >= 75)
-    resizeHT(&t,2*(t->size)+1);
+    int i;
+    for(i=0;i<new_size;i++){
+        if(i < (*t)->size)
+        new_table->slots[i] = (*t)->slots[i];
+        else{
+            new_table->slots[i] = (HTLinkedlist*)(malloc(sizeof(HTLinkedlist)));
+            new_table->slots[i]->head = NULL;
+        }
+    }
 
-    if(t->slots[code]->head == NULL){
-        t->slots[code]->head = nd;
-        t->num_entries++;
-        t->load_factor = (t->num_entries/t->size)*100; 
+    new_table->num_entries = (*t)->num_entries;
+    new_table->size = new_size;
+    new_table->load_factor = ((double)new_table->num_entries/new_table->size)*100;
+
+    *t = new_table;
+}
+
+
+void ht_set(HTable **t,void *nd){
+
+    if((*t)->load_factor >= 75)
+    resizeHT(t,2*((*t)->size)+1);
+           
+    int code = ht_code((*t)->size,((HTNode*)nd)->key);
+
+    if((*t)->slots[code]->head == NULL){
+        (*t)->slots[code]->head = (HTNode*)nd;
+        (*t)->num_entries++;
+        (*t)->load_factor = ((double)(*t)->num_entries/(*t)->size)*100; 
     }else{
-        HTNode *aux = t->slots[code]->head;
-        bool b = (aux->key == k);
+        HTNode *aux = (*t)->slots[code]->head;
+        bool b = (aux->key == ((HTNode*)nd)->key);
 
         while(aux->next != NULL && !b){
             aux = aux->next;
-            if(aux->key == k)
+            if(aux->key == ((HTNode*)nd)->key)
             b = true;
         }
         
         if(b)
         printf("This entry already exists");
         else{
-            aux->next = nd;
-            t->num_entries++;
-            t->load_factor = (t->num_entries/t->size)*100;
+            aux->next = (HTNode*)nd;
+            (*t)->num_entries++;
+            (*t)->load_factor = ((double)(*t)->num_entries/(*t)->size)*100; 
         }
         
     }
-        
+       
 }
 
-void *ht_get(HTable *t,void *k){
+void *ht_get(HTable **t,void *k){
 
-    int code = ht_code(t,k);
+    int code = ht_code((*t)->size,k);
 
-    HTNode *aux = t->slots[code]->head;
+    HTNode *aux = (*t)->slots[code]->head;
     bool b = false;
     while(aux != NULL && !b){
         if(strcmp(aux->key,k)==0)
@@ -164,13 +161,13 @@ void *ht_get(HTable *t,void *k){
     
 }
 
-void ht_del(HTable *t,void *k){
-    int code = ht_code(t,k);
+void ht_del(HTable **t,void *k){
+    int code = ht_code((*t)->size,k);
     bool b = false;
 
-    if(code < t->size)
+    if(code < (*t)->size)
     {
-        HTNode *aux = t->slots[code]->head;
+        HTNode *aux = (*t)->slots[code]->head;
         HTNode *prev = NULL;
         while(aux != NULL && !b){
             if(strcmp(aux->key,k) != 0){
@@ -183,15 +180,16 @@ void ht_del(HTable *t,void *k){
     printf("This entry does not exist");
     else{
         if(prev == NULL)
-        t->slots[code]->head = t->slots[code]->head->next;
+        (*t)->slots[code]->head = (*t)->slots[code]->head->next;
         else prev->next = aux->next;
 
-        t->num_entries--;
+        (*t)->num_entries--;
     }
    }
 }
 
 
+/*
 void main(){
 
     HTable *tb;
@@ -210,23 +208,32 @@ void main(){
 
     int i = 0;
     while(i < entries){
-        char *k_e = (char*)(malloc(sizeof(char)));
-        char *v_e = (char*)(malloc(1000*sizeof(char)));
+        HTNode *n = (HTNode*)(malloc(sizeof(HTNode)));
+        n->key = (char*)(malloc(sizeof(char)));
+        n->value = (char*)(malloc(1000*sizeof(char)));
+        
 
         printf("Give me the key and value of entry %d \n",i);
-        scanf("%s",k_e);
-        scanf("%s",v_e);
-        ht_set(tb,k_e,v_e);
+        scanf("%s",(char*)(n->key));
+        scanf("%s",(char*)(n->value));
+        ht_set(&tb,n);
         i++;
         printf("\n");
     }
+    
+    printf("\n");
+    printf("the size of the table is: %d \n\n",tb->size);
 
     ht_print(tb);
 
-    printf("\n");
-
-
     
+
+        
+
+}*/
+
+
+    /*
     char *t = (char*)(malloc(1000*sizeof(char)));
     while(true){
         printf("Give me the entry-key you are looking for: \n");
@@ -238,12 +245,7 @@ void main(){
         else printf("The value you are looking for is %s :",vl);
 
         printf("\n");
-    }
-        
-
-}
-
-
+    }*/
 
 
 

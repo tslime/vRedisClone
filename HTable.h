@@ -27,10 +27,10 @@ void initHT(HTable **t,int s);
 void resizeHT(HTable **t,int new_size);
 void ht_print(HTable *t);
 bool ht_gettype(char *k);
-int ht_code(HTable *t,void *k);
-void ht_set(HTable *t,void *k,void *v);
-void *ht_get(HTable *t,void *k);
-void ht_del(HTable *t,void *k);
+int ht_code(int table_size,void *k);
+void ht_set(HTable **t,void *nd);
+void *ht_get(HTable **t,void *k);
+void ht_del(HTable **t,void *k);
 
 
 #endif

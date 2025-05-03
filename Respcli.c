@@ -7,14 +7,15 @@
 #include<netinet/in.h>
 #include<arpa/inet.h>
 
-void *encode(char *cli_input){
+void *encode(char *client_input){
+   
    char *res = (char*)(malloc(1000*sizeof(char)));
    char **pos = (char**)(malloc(sizeof(char*)));
 
-   char *aux = strtok_r(cli_input," ",pos); 
+   char *aux = strtok_r(client_input," ",pos); 
    char *temp = (char*)(malloc(sizeof(char)));
-  
-   strcpy(res,"*3\r\n");
+   
+   //strcpy(res,"*3\r\n");
    
    int i = 0;
    while(aux != NULL){
@@ -24,7 +25,15 @@ void *encode(char *cli_input){
     i++;
    }
 
-   return res;
+   char *buf = (char*)malloc(100*sizeof(char));
+   sprintf(buf,"*%d%s",i,"\r\n");
+
+   
+   char *f_res = (char*)(malloc((strlen(res)+strlen(buf))*sizeof(char)));
+   strcpy(f_res,buf);
+   strcat(f_res,res);
+
+   return f_res;
 }
 
 void *initSocketClientAddr(struct sockaddr_in *addr){
@@ -47,12 +56,13 @@ void main(){
    struct sockaddr_in *client_addr = (struct sockaddr_in*)(malloc(sizeof(struct sockaddr_in)));
    initSocketClientAddr(client_addr);
 
+   /*
    int client_con_fd = connect(client_fd,(struct sockaddr*)client_addr,sizeof(struct sockaddr_in));
    
    if(client_con_fd == -1){
       perror("Error connecting \n");
       exit(1);
-   }
+   }*/
    
  
   //char *r = encode(test);
@@ -65,17 +75,7 @@ void main(){
    test[strlen(test)-1] = '\0';
    char *r = encode(test);
 
-   send(client_fd,r,strlen(r),0);
-   
-   recv(client_fd,buf,1000,0);
-   printf("%s \n",buf);
-
-  } 
-     
-}
-
-
-   /*
+    
    printf("encoded: ");
    int i = 0;
    while(i < strlen(r)){
@@ -87,5 +87,19 @@ void main(){
 
       i++;
    }
+   
    printf("\n");
+   
+
+   /*
+   send(client_fd,r,strlen(r),0);
+   recv(client_fd,buf,1000,0);
+   printf("%s \n",buf);
    */
+   
+  } 
+     
+}
+
+
+  
