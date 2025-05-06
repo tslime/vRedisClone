@@ -30,7 +30,7 @@ void main(){
     //Initialize command lexicon
     CMDTable *lexicon;
     CMDLexicon(&lexicon,5);
-    printLexicon(lexicon);
+    //printLexicon(lexicon);
 
     //Initialize Hashtable
     HTable *storage;
@@ -110,6 +110,7 @@ void main(){
                         epoll_ctl(events_fd,EPOLL_CTL_DEL,events[i].data.fd,NULL);
                         close(events[i].data.fd);
                         }else{
+                          
                           Cmd *rec = redis_parser(buffer);
                           char **t_rec = rec->args;
 
@@ -118,9 +119,23 @@ void main(){
                           if(rec->flag)
                           printf("%s",rec->err);
                           else{
+                            int c = ht_code(lexicon->lexicon_size,t_rec[0]);
+                            if(strcmp(t_rec[0],lexicon->entries[c]->command)==0){
+                              HTNode *n = (HTNode*)(malloc(sizeof(HTNode)));
+                              n->key = t_rec[1];
+                              n->value = t_rec[2];
+                              lexicon->entries[c]->cmd_func(&storage,n);
+                            }
+
+                            printf("\n");
+                            ht_print(storage);
+                            printf("\n");
+
+                            /*
                             int i;
                             for(i=0;i<rec->narg;i++)
                             printf("%s ",t_rec[i]);
+                            */
                           }
 
                           printf("\n");

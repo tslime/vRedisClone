@@ -3,9 +3,12 @@
 #include<malloc.h>
 #include<ctype.h>
 #include<stdbool.h>
+#include <unistd.h>
+#include<stdlib.h>
 
 
 #include "Resp.h"
+#include "HTable.h"
 
 
 void errFunc(Cmd *c,char *input,int pos,int chunk_pos){
@@ -40,16 +43,28 @@ void errFunc(Cmd *c,char *input,int pos,int chunk_pos){
                 if(input[pos] != '$'){
                     c->flag = true;
                     sprintf(c->err,"-ERR: expected $ at position %d instead found %c",pos,input[pos]);
-                }else if(!isdigit(input[pos+1])){
+                }else{ 
+                        pos++;
+                        char *temp = (char*)(malloc(1000*sizeof(char)));
+                        int i = 0;
+                        while(input[pos] != '\r'){
+                            temp[i] = input[pos];
+                            pos++;
+                            i++;
+                        }
+                        temp[i+1] = '\0';
+
+                        if(!ht_gettype(temp)){
                         c->flag = true;
-                        sprintf(c->err,"-ERR: expected integer at position %d instead found %c",pos+1,input[pos+1]);
-                      }else if(input[pos+2] != '\r'){
-                            c->flag = true;
-                            sprintf(c->err,"-ERR: expected \r at position %d instead found %c",pos+2,input[pos+2]);
-                        }else if(input[pos+3] != '\n'){
-                              c->flag = true;
-                              sprintf(c->err,"-ERR: expected \n at position %d instead found %c",pos+3,input[pos+3]);
+                        sprintf(c->err,"-ERR: expected integer at position %d instead found %c",pos--,input[pos--]);
+                        }else if(input[pos] != '\r'){
+                                c->flag = true;
+                                sprintf(c->err,"-ERR: expected \\r at position %d instead found %c",pos+2,input[pos+2]);
+                              }else if(input[pos+1] != '\n'){
+                                    c->flag = true;
+                                    sprintf(c->err,"-ERR: expected \\n at position %d instead found %c",pos+3,input[pos+3]);
                             }
+                }
 
             }else{
 
@@ -79,8 +94,8 @@ Cmd *redis_parser(char *input){
     pr->size = 0;
     pr->flag = false;
     pr->err = (char*)(malloc(10000*sizeof(char)));
-    pr->args = (char**)(malloc(1000*sizeof(char*)));//"*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"
-    int temp;
+    pr->args = (char**)(malloc(1000*sizeof(char*)));
+    int arg_length;
 
     errFunc(pr,input,0,0); //checkpoint 1
 
@@ -96,16 +111,28 @@ Cmd *redis_parser(char *input){
 
             errFunc(pr,input,i,0);  //checkpoint 3
             if(!(pr->flag)){
-                temp = input[i+1] - '0';
-                i+=4;
 
-                char *aux = (char*)(malloc(temp+1*sizeof(aux)));
-                memcpy(aux,&input[i],temp);
-                aux[temp+1] = '\0';
+                
+
+                char *temp = (char*)(malloc(1000*sizeof(char)));
+                i++;
+                int j = 0;
+                while(input[i] != '\r'){
+                    temp[j] = input[i];
+                    i++;
+                    j++;
+                }
+                temp[j] = '\0';
+                arg_length = atoi(temp);
+                i+=2;
+
+                char *aux = (char*)(malloc((arg_length+1)*sizeof(aux))); 
+                memcpy(aux,&input[i],arg_length);
+                aux[arg_length+1] = '\0';
                 pr->args[pr->size] = aux;
                 pr->size++;
 
-                i = i+temp;
+                i = i+arg_length;
                 
                 errFunc(pr,input,i,1); //checkpoint 4
                 i+=2;
@@ -122,14 +149,17 @@ void main(){
 
  
 
-   char *test = (char*)(malloc(1000*sizeof(char))); 
+   char *test = (char*)(malloc(10000*sizeof(char))); 
+   char *buffer = (char*)(malloc(10000*sizeof(char)));
   
-   test = "*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
+   test = "*3\r\n$3\r\nSET\r\n$11\r\nbrotherhood\r\n$13\r\nneighbourhood\r\n";
 
-   printf("\n");
+   //printf("Give me your fromatted command \n");
+   //read(STDIN_FILENO,test,sizeof(test)-1);
 
    Cmd *s = redis_parser(test);
    
+   printf("\n");
  
    if(s->flag)
    printf(" %s ",s->err);

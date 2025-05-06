@@ -16,10 +16,11 @@ void *encode(char *client_input){
    char *temp = (char*)(malloc(sizeof(char)));
    
    //strcpy(res,"*3\r\n");
-   
+   int arg_length = 0;
    int i = 0;
    while(aux != NULL){
-    sprintf(temp,"$3\r\n%s\r\n",aux);
+    arg_length = strlen(aux);
+    sprintf(temp,"$%d\r\n%s\r\n",arg_length,aux);
     strcat(res,temp);
     aux = strtok_r(NULL," ",pos);
     i++;
@@ -65,7 +66,6 @@ void main(){
    }
    
  
-  //char *r = encode(test);
   char *test = (char*)(malloc(1000*sizeof(char))); 
   char *buf = (char*)(malloc(1000*sizeof(char)));
 
@@ -74,15 +74,21 @@ void main(){
    fgets(test,1000,stdin);
    test[strlen(test)-1] = '\0';
    char *r = encode(test);
-
-    
+ 
    
    send(client_fd,r,strlen(r),0);
    recv(client_fd,buf,1000,0);
    printf("%s \n",buf);
    
+   printf("\n");
+   
+   
+  } 
+     
+}
 
-   /*
+
+     /*   
    printf("encoded: ");
    int i = 0;
    while(i < strlen(r)){
@@ -95,14 +101,3 @@ void main(){
       i++;
    }*/
    
-   printf("\n");
-   
-
- 
-   
-  } 
-     
-}
-
-
-  
