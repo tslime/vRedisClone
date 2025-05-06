@@ -56,13 +56,13 @@ void main(){
    struct sockaddr_in *client_addr = (struct sockaddr_in*)(malloc(sizeof(struct sockaddr_in)));
    initSocketClientAddr(client_addr);
 
-   /*
+   
    int client_con_fd = connect(client_fd,(struct sockaddr*)client_addr,sizeof(struct sockaddr_in));
    
    if(client_con_fd == -1){
       perror("Error connecting \n");
       exit(1);
-   }*/
+   }
    
  
   //char *r = encode(test);
@@ -76,6 +76,13 @@ void main(){
    char *r = encode(test);
 
     
+   
+   send(client_fd,r,strlen(r),0);
+   recv(client_fd,buf,1000,0);
+   printf("%s \n",buf);
+   
+
+   /*
    printf("encoded: ");
    int i = 0;
    while(i < strlen(r)){
@@ -86,16 +93,12 @@ void main(){
            else printf("%c",r[i]);
 
       i++;
-   }
+   }*/
    
    printf("\n");
    
 
-   /*
-   send(client_fd,r,strlen(r),0);
-   recv(client_fd,buf,1000,0);
-   printf("%s \n",buf);
-   */
+ 
    
   } 
      

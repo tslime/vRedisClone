@@ -66,6 +66,7 @@ void printLexicon(CMDTable *l){
 
 }
 
+/*
 void main(){
 
     
@@ -77,4 +78,4 @@ void main(){
     printLexicon(lexicon);
     printf("\n");
     
-}
+}*/

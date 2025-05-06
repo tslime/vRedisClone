@@ -12,6 +12,7 @@
 #include<signal.h>
 
 #include "Resp.h"
+#include "Cmdlexicon.h"
 
 
 void initSocketServerAddr(struct sockaddr_in **s){
@@ -26,6 +27,14 @@ void initSocketServerAddr(struct sockaddr_in **s){
 void main(){
     
 
+    //Initialize command lexicon
+    CMDTable *lexicon;
+    CMDLexicon(&lexicon,5);
+    printLexicon(lexicon);
+
+    //Initialize Hashtable
+    HTable *storage;
+    initHT(&storage,5);
     
     //Socket creation, TCP style
     int server_fd = socket(AF_INET,SOCK_STREAM,0);
